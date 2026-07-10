@@ -111,7 +111,7 @@ variables → Actions → *New repository secret*:
 | `SSH_HOST` | `145.79.28.130` |
 | `SSH_PORT` | `65002` |
 | `SSH_USER` | `u279697774` |
-| `SSH_PRIVATE_KEY` | full contents of the `emcey_deploy` private key (incl. the `-----BEGIN/END-----` lines) |
+| `SSH_PRIVATE_KEY` | **base64** of the `emcey_deploy` private key, one line (`base64 -w0 emcey_deploy`). Stored base64 so the GitHub UI can't mangle newlines; the workflow decodes it. |
 
 **Optional — production approval gate:** Settings → Environments → create
 `production` → add yourself as a *Required reviewer*. Then every prod deploy
