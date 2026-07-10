@@ -34,8 +34,7 @@ jobs:
           tools: composer
 
       - name: Build production dependencies
-        # API-only deploy: no frontend asset build (no npm). If you later want
-        # the /admin Blade UI styled, re-add Node + `npm ci && npm run build`.
+        # API-only deploy: no Blade views, so no frontend asset build (no npm).
         run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 
       - name: Configure SSH

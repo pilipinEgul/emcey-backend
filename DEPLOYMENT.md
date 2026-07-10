@@ -22,9 +22,9 @@ and only its own branch can trigger it:
   the test logic lives in exactly one place.
 - **`deploy-staging.yml`** (push to `staging`) / **`deploy-production.yml`**
   (push to `main`): after tests pass, each:
-  1. Builds `vendor/` (`composer install --no-dev`) + assets (`npm run build`)
-     **on the GitHub runner** — the shared host never runs composer/npm, which
-     avoids its memory limits.
+  1. Builds `vendor/` (`composer install --no-dev`) **on the GitHub runner** —
+     the shared host never runs composer, which avoids its memory limits. This
+     is an **API-only** app (no Blade UI), so there is no frontend asset build.
   2. `rsync`s the built app to its own `DEPLOY_PATH`, **excluding** `.env`,
      `storage/`, `public/storage`, `node_modules/`, `.git/` — so server secrets
      and uploads are never overwritten.

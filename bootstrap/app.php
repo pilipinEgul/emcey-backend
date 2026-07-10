@@ -20,9 +20,6 @@ return Application::configure(basePath: dirname(__DIR__))
         // the real client IP. Origin firewall must restrict ingress to Cloudflare
         // IPs — see docs/security.md §3.
         $middleware->trustProxies(at: '*');
-
-        $middleware->redirectGuestsTo(fn () => route('admin.login'));
-        $middleware->redirectUsersTo(fn () => route('admin.dashboard'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
