@@ -1,0 +1,79 @@
+name: Tests
+
+# Runs on every PR, and is called by both deploy workflows before they ship.
+# Uses a real MariaDB 11 service to match Hostinger production.
+
+on:
+  pull_request:
+    branches: [main, staging]
+  workflow_call: {}
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (PHP 8.3, MariaDB 11)
+    runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_DATABASE: testing
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+
+    # These OS env vars override the SQLite defaults in phpunit.xml
+    # (PHPUnit's <env> uses force=false, so an existing env var wins).
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: testing
+      DB_USERNAME: root
+      DB_PASSWORD: root
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, pdo_mysql, bcmath, intl, curl, dom
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Wait for MariaDB
+        run: |
+          for i in $(seq 1 30); do
+            if mysqladmin ping -h 127.0.0.1 -uroot -proot --silent; then
+              echo "MariaDB is up"; break
+            fi
+            echo "waiting for mariadb... ($i)"; sleep 2
+          done
+
+      - name: Run tests
+        run: php artisan test

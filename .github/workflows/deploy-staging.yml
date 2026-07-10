@@ -1,0 +1,76 @@
+name: Deploy Staging
+
+# Push to `staging` → test → build → deploy to staging-api.emcey-brows-aesthetics.com
+on:
+  push:
+    branches: [staging]
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  test:
+    uses: ./.github/workflows/tests.yml
+
+  deploy:
+    name: Deploy to staging
+    needs: test
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      DEPLOY_PATH: /home/u279697774/laravel/api-staging
+      APP_URL: https://staging-api.emcey-brows-aesthetics.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, bcmath, intl, curl, dom
+          tools: composer
+
+      - name: Build production dependencies
+        # API-only deploy: no frontend asset build (no npm). If you later want
+        # the /admin Blade UI styled, re-add Node + `npm ci && npm run build`.
+        run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Rsync to Hostinger
+        # .env / storage / uploads are excluded so server data & secrets survive.
+        run: |
+          rsync -az --delete \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='.env' \
+            --exclude='node_modules/' \
+            --exclude='/storage/' \
+            --exclude='/public/storage' \
+            -e "ssh -p ${{ secrets.SSH_PORT }}" \
+            ./ \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:$DEPLOY_PATH/"
+
+      - name: Migrate & cache (over SSH)
+        run: |
+          ssh -p "${{ secrets.SSH_PORT }}" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "set -e; cd '$DEPLOY_PATH'; \
+             php artisan migrate --force; \
+             php artisan config:cache; \
+             php artisan route:cache; \
+             php artisan view:cache; \
+             php artisan event:cache; \
+             php artisan storage:link 2>/dev/null || true"
+
+      - name: Smoke test
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL/api/v1/services?featured=1")
+          echo "GET $APP_URL/api/v1/services?featured=1 -> $code"
+          [ "$code" = "200" ] || { echo "::error::Smoke test failed (HTTP $code)"; exit 1; }

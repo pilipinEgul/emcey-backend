@@ -2,18 +2,25 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
     /**
-     * A basic test example.
+     * The site root redirects visitors to the admin panel.
      */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_root_redirects_to_admin(): void
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        $response->assertRedirect('/admin');
+    }
+
+    /**
+     * The framework health endpoint responds OK.
+     */
+    public function test_health_check_responds_ok(): void
+    {
+        $this->get('/up')->assertOk();
     }
 }

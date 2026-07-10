@@ -2,55 +2,57 @@
 
 CI/CD for the Laravel 13 API. The frontend is handled separately on Vercel; this
 repo deploys **only** the backend to **Hostinger Premium** (shared, PHP 8.3 +
-MySQL 8) over SSH.
+MariaDB 11) over SSH.
 
-| Branch | Deploys to | URL |
+| Branch | Workflow | Deploys to |
 | --- | --- | --- |
-| `main` | Production | `https://api.emcey-brows-aesthetics.com` |
-| `staging` | Staging | `https://staging-api.emcey-brows-aesthetics.com` |
+| `main` | `deploy-production.yml` | `https://api.emcey-brows-aesthetics.com` |
+| `staging` | `deploy-staging.yml` | `https://staging-api.emcey-brows-aesthetics.com` |
 
 Pull requests run the **test suite only** — no deploy.
 
-## How the pipeline works (`.github/workflows/deploy.yml`)
+## How the pipeline works
 
-1. **test** — PHP 8.3 + SQLite in-memory, `composer install`, `php artisan test`.
-2. **deploy** (only on push to `main`/`staging`):
-   - Builds `vendor/` (`composer install --no-dev`) and assets (`npm run build`)
+Staging and production are **separate workflow files** so each is self-contained
+and only its own branch can trigger it:
+
+- **`tests.yml`** — PHP 8.3 + a **MariaDB 11** service (matches Hostinger prod),
+  `composer install`, `php artisan test`. Runs on every PR, and is called by
+  both deploy workflows before they ship (`jobs.test.uses: ./…/tests.yml`), so
+  the test logic lives in exactly one place.
+- **`deploy-staging.yml`** (push to `staging`) / **`deploy-production.yml`**
+  (push to `main`): after tests pass, each:
+  1. Builds `vendor/` (`composer install --no-dev`) + assets (`npm run build`)
      **on the GitHub runner** — the shared host never runs composer/npm, which
      avoids its memory limits.
-   - `rsync` the built app to the server, **excluding** `.env`, `storage/`,
-     `public/storage`, `node_modules/`, `.git/` — so server secrets and uploads
-     are never overwritten.
-   - Runs `migrate --force` + config/route/view/event caching over SSH.
-   - Smoke-tests `GET /api/v1/services?featured=1` (fails the run if not `200`).
+  2. `rsync`s the built app to its own `DEPLOY_PATH`, **excluding** `.env`,
+     `storage/`, `public/storage`, `node_modules/`, `.git/` — so server secrets
+     and uploads are never overwritten.
+  3. Runs `migrate --force` + config/route/view/event caching over SSH.
+  4. Smoke-tests `GET /api/v1/services?featured=1` (fails the run if not `200`).
 
-The `main`/`staging` split is driven by **GitHub Environments**: the deploy job
-picks environment `production` or `staging`, and each environment supplies its
-own secret values (different `DEPLOY_PATH`, and different DB via the server
-`.env`). One workflow file, two isolated targets.
+Each deploy file **hardcodes its own** `DEPLOY_PATH` + `APP_URL` (not secrets —
+just paths), so the two environments can never cross-contaminate. Only the SSH
+connection details are shared secrets.
 
 ---
 
 ## One-time setup
 
-### 1. Hostinger — subdomains & document roots
+### 1. Hostinger — subdomains & document roots  ✅ DONE
 
-In **hPanel → Domains → Subdomains**:
+Both subdomains exist. Because hPanel fixes a subdomain's document root at
+`public_html/<name>` (not editable), the Laravel apps live **outside** the web
+root and each docroot is a **symlink** to the app's `public/` folder — this also
+keeps `.env`/`vendor` unreachable from the web:
 
-| Subdomain | App folder (rsync target = `DEPLOY_PATH`) | Document root (set this in hPanel) |
+| Subdomain | Docroot (symlink) | → App dir (`DEPLOY_PATH`) |
 | --- | --- | --- |
-| `api` (already created) | `.../public_html/api-emcey-brows-aesthetics` | `.../public_html/api-emcey-brows-aesthetics/public` |
-| `staging-api` (create it) | `.../public_html/staging-api-emcey-brows-aesthetics` | `.../public_html/staging-api-emcey-brows-aesthetics/public` |
+| `api.emcey-brows-aesthetics.com` | `.../public_html/api` | `/home/u279697774/laravel/api-prod` |
+| `staging-api.emcey-brows-aesthetics.com` | `.../public_html/staging-api` | `/home/u279697774/laravel/api-staging` |
 
-(`...` = `/home/u279697774/domains/emcey-brows-aesthetics.com`)
-
-> **Critical:** Laravel serves from its `public/` folder. For each subdomain,
-> **edit the document root so it ends in `/public`**. If it points at the app
-> root you'll get a 404 (or worse, expose source). hPanel auto-creates the app
-> folder when you make the subdomain; the `/public` inside it appears on the
-> first deploy.
-
-PHP is already **8.3.30** on this account — no version change needed.
+Storage skeleton + `bootstrap/cache` are pre-created (rsync excludes them so live
+logs/sessions survive deploys). PHP is **8.3.30**. SSL is active on both.
 
 ### 2. Hostinger — databases
 
@@ -81,16 +83,14 @@ Test: `ssh -p 65002 -i emcey_deploy u123456789@<host>`
 
 `.env` is **never** committed or uploaded. Create it directly on the server:
 
-```bash
-# production
-cd ~/domains/emcey-brows-aesthetics.com/public_html/api-emcey-brows-aesthetics
-nano .env          # paste from .env.production.example, fill DB + mail creds
-php artisan key:generate
+The `.env` files are already created at `~/laravel/api-prod/.env` and
+`~/laravel/api-staging/.env` with a generated `APP_KEY`. Only the DB credentials
+(`DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD`, currently `FILL_ME`) need filling
+once the databases exist:
 
-# staging
-cd ~/domains/emcey-brows-aesthetics.com/public_html/staging-api-emcey-brows-aesthetics
-nano .env          # paste from .env.staging.example
-php artisan key:generate
+```bash
+nano ~/laravel/api-prod/.env       # replace the three FILL_ME values
+nano ~/laravel/api-staging/.env
 ```
 
 Make sure `storage/` and `bootstrap/cache/` are writable:
@@ -99,34 +99,30 @@ Make sure `storage/` and `bootstrap/cache/` are writable:
 chmod -R 775 storage bootstrap/cache
 ```
 
-### 5. GitHub — repo, secrets & environments
+### 5. GitHub — repo & secrets
 
-Push this folder to its own GitHub repo (see below), then in
-**Settings → Environments** create **`production`** and **`staging`**. Add these
-secrets **to each environment** (values differ per environment):
+Push this folder to its own GitHub repo (see below). The two deploy paths and
+URLs are **hardcoded in the workflow files** (not secret), so you only add the
+**4 shared SSH secrets, once, at the repo level** — Settings → Secrets and
+variables → Actions → *New repository secret*:
 
-| Secret | production | staging |
-| --- | --- | --- |
-| `SSH_HOST` | `145.79.28.130` | `145.79.28.130` |
-| `SSH_PORT` | `65002` | `65002` |
-| `SSH_USER` | `u279697774` | `u279697774` |
-| `SSH_PRIVATE_KEY` | contents of `emcey_deploy` | same |
-| `DEPLOY_PATH` | `/home/u279697774/domains/emcey-brows-aesthetics.com/public_html/api-emcey-brows-aesthetics` | `/home/u279697774/domains/emcey-brows-aesthetics.com/public_html/staging-api-emcey-brows-aesthetics` |
+| Secret | Value |
+| --- | --- |
+| `SSH_HOST` | `145.79.28.130` |
+| `SSH_PORT` | `65002` |
+| `SSH_USER` | `u279697774` |
+| `SSH_PRIVATE_KEY` | full contents of the `emcey_deploy` private key (incl. the `-----BEGIN/END-----` lines) |
+
+**Optional — production approval gate:** Settings → Environments → create
+`production` → add yourself as a *Required reviewer*. Then every prod deploy
+pauses for your one-click approval. (`staging` needs no environment config.)
 
 > `PHP_BIN` is **not** needed — this account's `php` is already 8.3.30.
 
-### 6. DNS (at Hostinger, since the domain is registered there)
+### 6. DNS & SSL — ✅ DONE
 
-**hPanel → Domains → DNS / Nameservers → DNS Records.** The frontend records
-(apex + `www` → Vercel) are separate; for the API add:
-
-| Type | Name | Value | Note |
-| --- | --- | --- | --- |
-| A | `api` | *Hostinger server IP* | production API |
-| A | `staging-api` | *Hostinger server IP* | staging API |
-
-Find the server IP in hPanel → Hosting → *Details*. Then issue SSL for both
-subdomains in **hPanel → Security → SSL** (Let's Encrypt, free).
+Subdomains resolve and **SSL is already active** on both `api.` and
+`staging-api.` (auto-issued by Hostinger). Nothing to do here.
 
 ---
 
@@ -154,7 +150,7 @@ manual (so it never re-seeds on every deploy). After the first successful
 deploy, SSH in and run once per environment:
 
 ```bash
-cd ~/domains/emcey-brows-aesthetics.com/public_html/api-emcey-brows-aesthetics
+cd ~/laravel/api-prod
 php artisan migrate --seed --force
 ```
 
