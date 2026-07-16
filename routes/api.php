@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\GalleryController;
 use App\Http\Controllers\Api\PromoController;
 use App\Http\Controllers\Api\ServiceCategoryController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\SiteSettingController;
 use App\Http\Controllers\Api\TestimonialController;
 use App\Http\Controllers\Api\Admin\AppointmentController as AdminAppointmentController;
 use App\Http\Controllers\Api\Admin\AuthController as AdminAuthController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\Api\Admin\PromoController as AdminPromoController;
 use App\Http\Controllers\Api\Admin\ServiceCategoryController as AdminServiceCategoryController;
 use App\Http\Controllers\Api\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Api\Admin\SettingController as AdminSettingController;
+use App\Http\Controllers\Api\Admin\SiteSettingController as AdminSiteSettingController;
 use App\Http\Controllers\Api\Admin\TestimonialController as AdminTestimonialController;
 use App\Http\Controllers\Api\Admin\UploadController as AdminUploadController;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +30,8 @@ Route::prefix('v1')->group(function () {
 
         Route::get('services', [ServiceController::class, 'index']);
         Route::get('services/{slug}', [ServiceController::class, 'show']);
+
+        Route::get('site-settings', [SiteSettingController::class, 'show']);
 
         Route::get('testimonials', [TestimonialController::class, 'index']);
         Route::get('faqs', [FaqController::class, 'index']);
@@ -71,6 +75,10 @@ Route::prefix('v1/admin')->group(function () {
         // Booking schedule (studio hours + slot interval)
         Route::get('settings', [AdminSettingController::class, 'index']);
         Route::match(['put', 'patch'], 'settings', [AdminSettingController::class, 'update']);
+
+        // Business info (name, address, contact, socials) shown across the site
+        Route::get('site-settings', [AdminSiteSettingController::class, 'index']);
+        Route::match(['put', 'patch'], 'site-settings', [AdminSiteSettingController::class, 'update']);
 
         // Closures / holidays
         Route::get('closures', [AdminClosureController::class, 'index']);
