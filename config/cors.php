@@ -7,13 +7,7 @@ return [
     // The local dev origins below are always allowed so a Next.js dev server —
     // opened either as localhost or over the LAN IP (e.g. from a phone on the
     // same network) — can talk to this API without editing the server .env.
-    'allowed_origins' => array_values(array_filter(array_unique(array_merge(
-        array_map('trim', explode(',', (string) env('CORS_ALLOWED_ORIGINS', ''))),
-        [
-            'http://localhost:3000',
-            'http://192.168.50.103:3000',
-        ],
-    )))),
+    'allowed_origins' => ['*'],
     // Any private-LAN IP on port 3000 (192.168.x.x / 10.x / 172.16-31.x), so the
     // dev server keeps working if your machine's local IP changes.
     'allowed_origins_patterns' => [
