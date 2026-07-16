@@ -10,6 +10,7 @@ class ServiceResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'service_category_id' => $this->service_category_id,
             'name' => $this->name,
             'slug' => $this->slug,
             'short_description' => $this->short_description,
@@ -32,6 +33,8 @@ class ServiceResource extends JsonResource
                 'keywords' => $this->meta_keywords,
             ],
             'is_featured' => $this->is_featured,
+            'is_active' => $this->is_active,
+            'sort_order' => $this->sort_order,
             'category' => new ServiceCategoryResource($this->whenLoaded('category')),
             'faqs' => FaqResource::collection($this->whenLoaded('faqs')),
             'testimonials' => TestimonialResource::collection($this->whenLoaded('testimonials')),

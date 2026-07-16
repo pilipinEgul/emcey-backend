@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(HandleCors::class);
 
+        $middleware->alias([
+            'admin.auth' => \App\Http\Middleware\EnsureAdmin::class,
+        ]);
+
         // Trust the upstream proxy (Cloudflare) so $request->ip() resolves to
         // the real client IP. Origin firewall must restrict ingress to Cloudflare
         // IPs — see docs/security.md §3.

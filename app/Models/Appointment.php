@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
     'scheduled_at', 'duration_minutes', 'status',
     'notes', 'admin_notes', 'total_amount', 'down_payment',
     'payment_status', 'promo_code',
+    'cancellation_reason', 'cancelled_at',
 ])]
 class Appointment extends Model
 {
@@ -32,6 +33,7 @@ class Appointment extends Model
     {
         return [
             'scheduled_at' => 'datetime',
+            'cancelled_at' => 'datetime',
             'total_amount' => 'decimal:2',
             'down_payment' => 'decimal:2',
         ];

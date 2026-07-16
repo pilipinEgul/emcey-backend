@@ -15,6 +15,7 @@ class ServiceCategoryResource extends JsonResource
             'description' => $this->description,
             'icon' => $this->icon,
             'sort_order' => $this->sort_order,
+            'is_active' => $this->is_active,
             'services' => ServiceResource::collection($this->whenLoaded('services')),
         ];
     }

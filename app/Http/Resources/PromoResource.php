@@ -16,9 +16,11 @@ class PromoResource extends JsonResource
             'type' => $this->type,
             'value' => $this->value,
             'minimum_amount' => $this->minimum_amount,
+            'usage_limit' => $this->usage_limit,
             'cover_image' => $this->cover_image,
-            'starts_at' => $this->starts_at?->toIso8601String(),
-            'ends_at' => $this->ends_at?->toIso8601String(),
+            'starts_at' => $this->starts_at?->toDateString(),
+            'ends_at' => $this->ends_at?->toDateString(),
+            'is_active' => $this->is_active,
             'is_featured' => $this->is_featured,
         ];
     }

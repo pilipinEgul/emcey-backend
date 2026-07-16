@@ -10,6 +10,7 @@ class GalleryImageResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'service_id' => $this->service_id,
             'category' => $this->category,
             'title' => $this->title,
             'alt_text' => $this->alt_text,

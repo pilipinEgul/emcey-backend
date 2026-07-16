@@ -17,6 +17,8 @@ class AppointmentResource extends JsonResource
             'scheduled_at' => $this->scheduled_at?->toIso8601String(),
             'duration_minutes' => $this->duration_minutes,
             'status' => $this->status,
+            'cancellation_reason' => $this->cancellation_reason,
+            'google_event_link' => $this->google_event_link,
             'notes' => $this->notes,
             'total_amount' => $this->total_amount,
             'down_payment' => $this->down_payment,
