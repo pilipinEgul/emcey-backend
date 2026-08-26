@@ -1,14 +1,17 @@
 <?php
 
+use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\ContactInquiryController;
 use App\Http\Controllers\Api\FaqController;
 use App\Http\Controllers\Api\GalleryController;
 use App\Http\Controllers\Api\PromoController;
 use App\Http\Controllers\Api\ServiceCategoryController;
+use App\Http\Controllers\Api\PageContentController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\SiteSettingController;
 use App\Http\Controllers\Api\TestimonialController;
+use App\Http\Controllers\Api\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Api\Admin\AppointmentController as AdminAppointmentController;
 use App\Http\Controllers\Api\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Api\Admin\ClosureController as AdminClosureController;
@@ -16,7 +19,9 @@ use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardControll
 use App\Http\Controllers\Api\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Api\Admin\GalleryController as AdminGalleryController;
 use App\Http\Controllers\Api\Admin\PromoController as AdminPromoController;
+use App\Http\Controllers\Api\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Api\Admin\ServiceCategoryController as AdminServiceCategoryController;
+use App\Http\Controllers\Api\Admin\PageContentController as AdminPageContentController;
 use App\Http\Controllers\Api\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Api\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Api\Admin\SiteSettingController as AdminSiteSettingController;
@@ -32,11 +37,13 @@ Route::prefix('v1')->group(function () {
         Route::get('services/{slug}', [ServiceController::class, 'show']);
 
         Route::get('site-settings', [SiteSettingController::class, 'show']);
+        Route::get('page-content', [PageContentController::class, 'show']);
 
         Route::get('testimonials', [TestimonialController::class, 'index']);
         Route::get('faqs', [FaqController::class, 'index']);
         Route::get('gallery', [GalleryController::class, 'index']);
         Route::get('promos', [PromoController::class, 'index']);
+        Route::get('announcements', [AnnouncementController::class, 'index']);
     });
 
     Route::middleware('throttle:availability')->group(function () {
@@ -64,7 +71,9 @@ Route::prefix('v1/admin')->group(function () {
         Route::post('logout', [AdminAuthController::class, 'logout']);
         Route::get('me', [AdminAuthController::class, 'me']);
         Route::get('dashboard', [AdminDashboardController::class, 'index']);
+        Route::get('reports/bookings', [AdminReportController::class, 'bookings']);
         Route::post('uploads', [AdminUploadController::class, 'store']);
+        Route::post('uploads/video', [AdminUploadController::class, 'storeVideo']);
 
         // Appointments
         Route::get('appointments', [AdminAppointmentController::class, 'index']);
@@ -79,6 +88,10 @@ Route::prefix('v1/admin')->group(function () {
         // Business info (name, address, contact, socials) shown across the site
         Route::get('site-settings', [AdminSiteSettingController::class, 'index']);
         Route::match(['put', 'patch'], 'site-settings', [AdminSiteSettingController::class, 'update']);
+
+        // Editable page content (About, Home extras, Testimonials copy…)
+        Route::get('page-content', [AdminPageContentController::class, 'index']);
+        Route::match(['put', 'patch'], 'page-content', [AdminPageContentController::class, 'update']);
 
         // Closures / holidays
         Route::get('closures', [AdminClosureController::class, 'index']);
@@ -95,6 +108,7 @@ Route::prefix('v1/admin')->group(function () {
         Route::apiResource('services', AdminServiceController::class);
         Route::apiResource('testimonials', AdminTestimonialController::class)->except(['show']);
         Route::apiResource('promos', AdminPromoController::class)->except(['show']);
+        Route::apiResource('announcements', AdminAnnouncementController::class)->except(['show']);
         Route::apiResource('faqs', AdminFaqController::class)->except(['show']);
         Route::apiResource('gallery', AdminGalleryController::class)->except(['show']);
     });
