@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\Admin\AnnouncementController as AdminAnnouncementCo
 use App\Http\Controllers\Api\Admin\AppointmentController as AdminAppointmentController;
 use App\Http\Controllers\Api\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Api\Admin\ClosureController as AdminClosureController;
+use App\Http\Controllers\Api\Admin\ContactInquiryController as AdminContactInquiryController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Api\Admin\GalleryController as AdminGalleryController;
@@ -72,6 +73,11 @@ Route::prefix('v1/admin')->group(function () {
         Route::get('me', [AdminAuthController::class, 'me']);
         Route::get('dashboard', [AdminDashboardController::class, 'index']);
         Route::get('reports/bookings', [AdminReportController::class, 'bookings']);
+
+        // Contact form messages
+        Route::get('contact-inquiries', [AdminContactInquiryController::class, 'index']);
+        Route::match(['put', 'patch'], 'contact-inquiries/{contactInquiry}', [AdminContactInquiryController::class, 'update']);
+        Route::delete('contact-inquiries/{contactInquiry}', [AdminContactInquiryController::class, 'destroy']);
         Route::post('uploads', [AdminUploadController::class, 'store']);
         Route::post('uploads/video', [AdminUploadController::class, 'storeVideo']);
 
