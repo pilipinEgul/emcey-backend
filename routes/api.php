@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\TestimonialController;
 use App\Http\Controllers\Api\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Api\Admin\AppointmentController as AdminAppointmentController;
 use App\Http\Controllers\Api\Admin\AuthController as AdminAuthController;
+use App\Http\Controllers\Api\Admin\BadgeController as AdminBadgeController;
 use App\Http\Controllers\Api\Admin\ClosureController as AdminClosureController;
 use App\Http\Controllers\Api\Admin\ContactInquiryController as AdminContactInquiryController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
@@ -73,9 +74,9 @@ Route::prefix('v1/admin')->group(function () {
         Route::get('me', [AdminAuthController::class, 'me']);
         Route::get('dashboard', [AdminDashboardController::class, 'index']);
         Route::get('reports/bookings', [AdminReportController::class, 'bookings']);
+        Route::get('badges', [AdminBadgeController::class, 'index']);
 
         // Contact form messages
-        Route::get('contact-inquiries/unread', [AdminContactInquiryController::class, 'unread']);
         Route::get('contact-inquiries', [AdminContactInquiryController::class, 'index']);
         Route::match(['put', 'patch'], 'contact-inquiries/{contactInquiry}', [AdminContactInquiryController::class, 'update']);
         Route::delete('contact-inquiries/{contactInquiry}', [AdminContactInquiryController::class, 'destroy']);
