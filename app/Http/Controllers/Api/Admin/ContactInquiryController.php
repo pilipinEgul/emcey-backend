@@ -16,6 +16,14 @@ class ContactInquiryController extends Controller
         );
     }
 
+    /** Count of messages not yet handled (anything not marked "closed"). */
+    public function unread()
+    {
+        return response()->json([
+            'data' => ['count' => ContactInquiry::query()->where('status', '!=', 'closed')->count()],
+        ]);
+    }
+
     public function update(Request $request, ContactInquiry $contactInquiry)
     {
         $data = $request->validate([

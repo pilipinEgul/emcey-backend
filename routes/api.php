@@ -75,6 +75,7 @@ Route::prefix('v1/admin')->group(function () {
         Route::get('reports/bookings', [AdminReportController::class, 'bookings']);
 
         // Contact form messages
+        Route::get('contact-inquiries/unread', [AdminContactInquiryController::class, 'unread']);
         Route::get('contact-inquiries', [AdminContactInquiryController::class, 'index']);
         Route::match(['put', 'patch'], 'contact-inquiries/{contactInquiry}', [AdminContactInquiryController::class, 'update']);
         Route::delete('contact-inquiries/{contactInquiry}', [AdminContactInquiryController::class, 'destroy']);
