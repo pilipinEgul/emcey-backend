@@ -21,7 +21,7 @@ class TestimonialController extends Controller
             $query->where('is_featured', true);
         }
 
-        $perPage = min(48, max(1, $request->integer('per_page', 12)));
+        $perPage = min(200, max(1, $request->integer('per_page', 12)));
 
         return TestimonialResource::collection($query->paginate($perPage));
     }

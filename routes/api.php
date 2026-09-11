@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\PageContentController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\SiteSettingController;
 use App\Http\Controllers\Api\TestimonialController;
+use App\Http\Controllers\Api\ThemeController;
 use App\Http\Controllers\Api\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Api\Admin\AppointmentController as AdminAppointmentController;
 use App\Http\Controllers\Api\Admin\AuthController as AdminAuthController;
@@ -28,6 +29,7 @@ use App\Http\Controllers\Api\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Api\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Api\Admin\SiteSettingController as AdminSiteSettingController;
 use App\Http\Controllers\Api\Admin\TestimonialController as AdminTestimonialController;
+use App\Http\Controllers\Api\Admin\ThemeController as AdminThemeController;
 use App\Http\Controllers\Api\Admin\UploadController as AdminUploadController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +42,7 @@ Route::prefix('v1')->group(function () {
 
         Route::get('site-settings', [SiteSettingController::class, 'show']);
         Route::get('page-content', [PageContentController::class, 'show']);
+        Route::get('theme', [ThemeController::class, 'show']);
 
         Route::get('testimonials', [TestimonialController::class, 'index']);
         Route::get('faqs', [FaqController::class, 'index']);
@@ -100,6 +103,10 @@ Route::prefix('v1/admin')->group(function () {
         // Editable page content (About, Home extras, Testimonials copy…)
         Route::get('page-content', [AdminPageContentController::class, 'index']);
         Route::match(['put', 'patch'], 'page-content', [AdminPageContentController::class, 'update']);
+
+        // Theme (colors + light/dark default)
+        Route::get('theme', [AdminThemeController::class, 'index']);
+        Route::match(['put', 'patch'], 'theme', [AdminThemeController::class, 'update']);
 
         // Closures / holidays
         Route::get('closures', [AdminClosureController::class, 'index']);
